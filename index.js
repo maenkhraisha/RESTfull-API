@@ -6,14 +6,39 @@
 */
 
 //dependencies
-const HTTP = require('http');
+const http = require('http');
+const https = require('https');
 const URL = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
 const config = require('./config.js');
+const fs = require('fs');
 
-// the server response to all request with a string
-const server = HTTP.createServer(function(req,res){
+// instantiate the HTTP server
+const httpServer = http.createServer(function(req,res){
+  unifiedServer(req,res);
+});
 
+// instantiate the HTTP server
+const httpsSErverOptions =  {
+  'key' : fs.readFileSync('./https/key.pem'),
+  'cert' : fs.readFileSync('./https/cert.pem'),
+};
+const httpsServer = https.createServer(httpsSErverOptions,function(req,res){
+  unifiedServer(req,res);
+});
+
+// start the server
+httpServer.listen(config.httpPort,function(){
+  console.log('The server is listeing on port '+config.httpPort);
+});
+
+// start the server
+httpsServer.listen(config.httpsPort,function(){
+  console.log('The server is listeing on port '+config.httpsPort);
+});
+
+// all the server logic for both the htpp and https createServer
+const unifiedServer = function(req,res){
   // get the url and parse it
   const parsedUrl = URL.parse(req.url,true);
 
@@ -73,20 +98,14 @@ const server = HTTP.createServer(function(req,res){
 
     });
   });
-});
-
-// start the server
-server.listen(config.port,function(){
-  console.log('The server is listeing on port '+config.port+' in '+config.envName+ ' mode');
-});
+}
 
 //define handler
 const handlers = {};
 
-//sample handler
-handlers.sample = function(data,callback){
-  //callback a http status code, and payload object
-  callback(406,{'name' : 'sample handler'});
+//ping handler
+handlers.ping = function(data,callback){
+  callback(200);
 };
 
 //not found handler
@@ -96,5 +115,5 @@ handlers.notFound = function(data,callback){
 
 //define a request router
 const router = {
-  'sample' : handlers.sample
+  'ping' : handlers.ping
 };
